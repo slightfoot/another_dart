@@ -1,0 +1,157 @@
+P E A N U T  3000
+Copyright  } 1990 Peanut Computer, Inc.\nAll rights reserved.\n\nCDOS Version 5.01
+2
+3
+.
+A
+@
+PEANUT 3000
+R
+U
+N
+P
+R
+O
+J
+E
+C
+T
+Shield 9A.5f Ok
+Flux % 5.0177 Ok
+CDI Vector ok
+ %%%ddd ok
+Race-Track ok
+SYNCHROTRON
+E: 23%\ng: .005\n\nRK: 77.2L\n\nopt: g+\n\n Shield:\n1: OFF\n2: ON\n3: ON\n\nP~: 1\n
+ON
+-
+|
+--- Theoretical study ---
+ THE EXPERIMENT WILL BEGIN IN    SECONDS
+  20
+  19
+  18
+   4
+   3
+   2
+   1
+   0
+L E T ' S   G O
+- Phase 0:\nINJECTION of particles\ninto synchrotron
+- Phase 1:\nParticle ACCELERATION.
+- Phase 2:\nEJECTION of particles\non the shield.
+A  N  A  L  Y  S  I  S
+- RESULT:\nProbability of creating:\n ANTIMATTER: 91.V %\n NEUTRINO 27:  0.04 %\n NEUTRINO 424: 18 %\n
+   Practical verification Y/N ?
+SUR ?
+MODIFICATION OF PARAMETERS\nRELATING TO PARTICLE\nACCELERATOR (SYNCHROTRON).
+       RUN EXPERIMENT ?
+t---t
+000 ~
+.20x14dd
+gj5r5r
+tilgor 25%
+12% 33% checked
+D=4.2158005584
+d=10.00001
++
+*
+% 304
+gurgle 21
+{{{{
+   5
+  17
+   N C B F G H
+   T A K R P X
+N
+C
+B
+F
+G
+H
+T
+A
+K
+R
+X
+P
+ 
+ 
+   ENTER ACCESS CODE
+   PASSWORD INVALID!
+ANNULER
+Burp !
+I want to believe
+    LOADING...
+              ERROR
+       Designed, program & artwork\n            by Eric Chahi
+             
+		       Music by J.F Freitas\n
+           PC port: DotEmu\n 
+             Sound effects:
+         Jean-Francois Freitas\n\n     Charlie Atanasyan, Eric Chahi
+          -----
+     ----------
+              \n\n
+             \n\n          
+               Thanks To
+            Jesus Martinez\n\n          Daniel Morais\n\n        Pierre Gousseau\n\n      Cecile Chahi\n\n    Abrial da Costa\n\n  Frederic Sardain\n\nSebastien Berthet
+ Now Go Back To Another Earth
+  BY
+ ERIC CHAHI
+          MUSIC AND SOUND EFFECTS
+ 
+ JEAN-FRANCOIS FREITAS
+ 
+ 
+ 
+Good evening professor.
+I see you have driven here in your\nFerrari.
+IDENTIFICATION
+Monsieur est en parfaite sante.
+Y
+AU BOULOT !!!\n
+Over Two Years in the Making
+   A New, State\nof the Art, Polygon\n  Graphics System
+   Comes to the\nComputer With Full\n Screen Graphics
+While conducting a nuclear fission\nexperiment at your local\nparticle accelerator ...
+Nature decides to put a little\n    extra spin on the ball
+And sends you ...
+     Another World\nA Cinematic Action Adventure\n Coming soon to a computer\n      screen near you\n from ??????? Productions\n   
+P A U S E
+CONTINUE
+EXIT
+*
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
