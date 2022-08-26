@@ -27,6 +27,7 @@ class VirtualMachine {
   final ins = VirtualInstructions();
   late final Map<int, VirtualInstruction> opcodes;
 
+  bool _paused = false;
   Ticker? _ticker;
 
   void generateOpcodeLookup() {
@@ -66,11 +67,7 @@ class VirtualMachine {
       return;
     }
     late final Ticker ticker;
-    ticker = Ticker((Duration elapsed) async {
-      if (!await tick()) {
-        ticker.stop();
-      }
-    });
+    ticker = Ticker((_) => tick());
     ticker.start();
     _ticker = ticker;
     input.start();
@@ -108,19 +105,27 @@ class VirtualMachine {
     }
   }
 
-  Future<bool> tick() async {
+  Future<void> tick() async {
     final current = DateTime.now().millisecondsSinceEpoch;
     state.delay -= current - state.timestamp;
     while (state.delay <= 0) {
       if (!await runTasks()) {
-        return false;
+        _ticker!.stop();
+        _ticker = null;
+        return;
       }
     }
     state.timestamp = current;
-    return true;
   }
 
   Future<bool> runTasks() async {
+    if (input.isKeyPressed(InputKey.pause)) {
+      _paused = !_paused;
+    }
+    if (_paused) {
+      state.delay = 20;
+      return true;
+    }
     if (state.nextPart != -1) {
       await restart(state.nextPart);
       state.nextPart = -1;

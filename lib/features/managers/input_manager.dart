@@ -7,7 +7,8 @@ enum InputKey {
   down(LogicalKeyboardKey.arrowDown),
   left(LogicalKeyboardKey.arrowLeft),
   right(LogicalKeyboardKey.arrowRight),
-  action(LogicalKeyboardKey.space);
+  action(LogicalKeyboardKey.space),
+  pause(LogicalKeyboardKey.shiftLeft);
 
   const InputKey(this.logicalKey);
 
