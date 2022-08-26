@@ -5,6 +5,7 @@ import 'package:another_dart/features/renderer/palette.dart';
 import 'package:flutter/scheduler.dart' show Ticker;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:another_dart/features/managers/input_manager.dart';
+import 'package:another_dart/features/managers/sound_manager.dart';
 import 'package:another_dart/features/vm/variables.dart';
 import 'package:another_dart/utils/data_buffer.dart';
 import 'package:another_dart/features/vm/renderer.dart';
@@ -24,6 +25,7 @@ class VirtualMachine {
   late final VirtualRenderer renderer;
   final state = VirtualState();
   final input = InputManager();
+  final sound = SoundManager();
   final ins = VirtualInstructions();
   late final Map<int, VirtualInstruction> opcodes;
 
@@ -71,9 +73,11 @@ class VirtualMachine {
     ticker.start();
     _ticker = ticker;
     input.start();
+    sound.start();
   }
 
   void stop() {
+    sound.stop();
     input.stop();
     if (_ticker != null) {
       _ticker!.stop();

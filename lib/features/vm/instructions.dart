@@ -241,6 +241,7 @@ class VirtualInstructions {
     final volume = readU8();
     final channel = readU8();
     print('playSound($index, $freq, $volume, $channel)');
+    _machine.sound.playSound(index, freq, volume, channel);
   }
 
   /// 0x19: Load resource | ex. loadResource(index);
@@ -264,6 +265,7 @@ class VirtualInstructions {
     final delay = readU16();
     final position = readU8();
     print('playMusic($index, $delay, $position)');
+    _machine.sound.playMusic(index, delay, position);
   }
 
   /// 0x4x: Draw Poly Sprite | ex. drawPolySprite(...)
