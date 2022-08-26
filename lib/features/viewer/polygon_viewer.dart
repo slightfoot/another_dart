@@ -22,10 +22,10 @@ class _PolygonViewerState extends State<PolygonViewer> {
 
   Future<void> _parsePolygons() async {
     _polygons = await PolygonParser.loadDemo(
-      'assets/${_selected!.polygon1}',
+      'assets/data/${_selected!.polygon1}',
       'assets/offsets_16001.csv',
     );
-    _palettes = await Palette.load('assets/${_selected!.palette}');
+    _palettes = await Palette.load('assets/data/${_selected!.palette}');
     _palette = _palettes![0];
     if (mounted) {
       setState(() {});

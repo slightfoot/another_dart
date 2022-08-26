@@ -251,7 +251,7 @@ class VirtualMachine {
   }
 
   String assetPath(int resourceIndex) {
-    return 'assets/file${resourceIndex.toString().padLeft(3, '0')}.dat';
+    return 'assets/data/file${resourceIndex.toString().padLeft(3, '0')}.dat';
   }
 
   Future<DataBuffer> load(int resourceIndex) async {
