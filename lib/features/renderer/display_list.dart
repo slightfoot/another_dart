@@ -1,8 +1,5 @@
-import 'dart:ui' show Color;
-
 import 'package:another_dart/features/renderer/drawable.dart';
 import 'package:another_dart/features/renderer/palette.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:vector_math/vector_math.dart' show Vector2;
 
 class DisplayList {
@@ -10,15 +7,6 @@ class DisplayList {
   Palette? palette;
 
   List<DrawCommand> get commands => List.unmodifiable(_commands);
-
-  Color getColor(int colorIndex) {
-    if (colorIndex > 0x10) {
-      // debugPrint('Invalid Color: ${colorIndex.toRadixString(16).padLeft(2, '0')}');
-    }
-    return colorIndex == 0x10 // Semi-transparent.. guess fixed palette entry for now
-        ? Color(palette!.colors[12]).withOpacity(0.5)
-        : Color(palette!.colors[colorIndex & 0xf]);
-  }
 
   void clear(int colorIndex) {
     _commands.clear();

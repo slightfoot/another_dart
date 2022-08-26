@@ -108,7 +108,7 @@ class VirtualRenderer {
       return;
     }
     _addCommand(
-      DrawStringCommand(strings_en[index]!, Vector2(x.toDouble() * 8, y.toDouble()), colorIndex),
+      DrawStringCommand(strings_en[index]!, Vector2(x.toDouble(), y.toDouble()), colorIndex),
     );
   }
 
