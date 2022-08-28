@@ -99,6 +99,8 @@ class _DisplayListPainter extends CustomPainter {
       for (final command in displayList.commands) {
         if (command is FillPageCommand) {
           canvas.drawRect(Offset.zero & size, getPaintForColor(command.colorIndex));
+        } else if (command is VerticalOffsetCommand) {
+          canvas.translate(0.0, command.yOffset.toDouble());
         } else if (command is DrawStringCommand) {
           _drawString(canvas, command, getColor(command.colorIndex));
         } else if (command is DrawBitmapCommand) {

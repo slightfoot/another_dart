@@ -17,8 +17,11 @@ class DisplayList {
     _commands.add(FillPageCommand(colorIndex));
   }
 
-  void copy(DisplayList source) {
+  void copy(DisplayList source, int yOffset) {
     _commands.clear();
+    if (yOffset != 0) {
+      _commands.add(VerticalOffsetCommand(yOffset));
+    }
     _commands.addAll(source.commands);
     palette = source.palette;
   }
@@ -39,6 +42,12 @@ class FillPageCommand implements DrawCommand {
   const FillPageCommand(this.colorIndex);
 
   final int colorIndex;
+}
+
+class VerticalOffsetCommand implements DrawCommand {
+  const VerticalOffsetCommand(this.yOffset);
+
+  final int yOffset;
 }
 
 class DrawStringCommand implements DrawCommand {

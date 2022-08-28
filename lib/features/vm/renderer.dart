@@ -102,7 +102,7 @@ class VirtualRenderer {
     final dstPageIndex = _pageIndexFromOperand(destOperand);
     if (srcOperand == -1 || srcOperand == -2) {
       final srcPageIndex = _pageIndexFromOperand(srcOperand);
-      _displayLists[dstPageIndex].copy(_displayLists[srcPageIndex]);
+      _displayLists[dstPageIndex].copy(_displayLists[srcPageIndex], 0);
     } else {
       final srcPageIndex = _pageIndexFromOperand(srcOperand & 0x03);
       if (dstPageIndex == srcPageIndex) {
@@ -111,8 +111,7 @@ class VirtualRenderer {
       if ((srcOperand & 0x80) == 0) {
         yOffset = 0;
       }
-      // FIXME: also deal with yOffset
-      _displayLists[dstPageIndex].copy(_displayLists[srcPageIndex]);
+      _displayLists[dstPageIndex].copy(_displayLists[srcPageIndex], yOffset);
     }
   }
 
