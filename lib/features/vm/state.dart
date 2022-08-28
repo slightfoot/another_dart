@@ -8,15 +8,18 @@ class VirtualState {
 
   late DataBuffer bytecode;
   final tasks = List<VirtualTask>.filled(64, VirtualTask());
-  bool taskPaused = false;
-  int taskNum = 0;
+  bool taskYielded = false;
+  int taskIndex = 0;
+
+  VirtualTask get currentTask => tasks[taskIndex];
 
   final vars = Int16List(256);
   int currentPart = -1;
-  int nextPart = -1;
+  int nextPart = 0;
 
   int delay = 0;
   int timestamp = 0;
+  bool paused = false;
 
   int operator [](Var index) => vars[index.value];
 

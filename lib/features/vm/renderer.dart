@@ -1,13 +1,14 @@
-import 'package:another_dart/app/strings_en.dart';
+import 'package:another_dart/app/string_ids.dart';
 import 'package:another_dart/features/polygon/parser.dart';
 import 'package:another_dart/features/renderer/display_list.dart';
+import 'package:another_dart/features/renderer/display_paint.dart';
 import 'package:another_dart/features/renderer/palette.dart';
 import 'package:vector_math/vector_math.dart' show Vector2;
 
-typedef UpdateDisplayFn = void Function(DisplayList displayList);
+typedef UpdateDisplayFn = void Function(VirtualRenderer renderer);
 
 class VirtualRenderer {
-  VirtualRenderer(this.updateDisplay) {
+  VirtualRenderer(this._updateDisplay) {
     reset();
   }
 
@@ -16,7 +17,7 @@ class VirtualRenderer {
   late PolygonParser polygons1;
   late PolygonParser? polygons2;
 
-  final UpdateDisplayFn updateDisplay;
+  final UpdateDisplayFn _updateDisplay;
 
   // Contains the display lists for each of the "frame buffers"
   late List<DisplayList> _displayLists;
@@ -31,6 +32,15 @@ class VirtualRenderer {
   late int _displayList2 = 1;
 
   late int _paletteIndex = 0;
+
+  List<DisplayList> get displayLists {
+    return <DisplayList>[
+      _displayLists[_displayList0],
+      _displayLists[_displayList1],
+      _displayLists[_displayList2],
+      _displayLists[3],
+    ];
+  }
 
   void reset() {
     _displayLists = List.generate(4, (_) => DisplayList());
@@ -51,8 +61,18 @@ class VirtualRenderer {
         _displayList1 = _pageIndexFromOperand(pageOperand);
       }
     }
-    _displayLists[_displayList1].palette = palettes[_paletteIndex];
-    updateDisplay(_displayLists[_displayList1]);
+    final palette = palettes[_paletteIndex];
+    for (final list in _displayLists) {
+      list.palette ??= palette;
+    }
+    _displayLists[_displayList1].palette = palette;
+    _displayLists[3].palette = _displayLists[_displayList2].palette;
+
+    updateDisplay();
+  }
+
+  void updateDisplay() {
+    _updateDisplay(this);
   }
 
   int _pageIndexFromOperand(int pageOperand) {
@@ -74,12 +94,12 @@ class VirtualRenderer {
     _displayList0 = _pageIndexFromOperand(pageOperand);
   }
 
-  void fillPage(int pageOperand, int colorIndex) {
+  void addFillPage(int pageOperand, int colorIndex) {
     final pageIndex = _pageIndexFromOperand(pageOperand);
     _displayLists[pageIndex].clear(colorIndex);
   }
 
-  void copyPage(int srcOperand, int destOperand, int yOffset) {
+  void addCopyPage(int srcOperand, int destOperand, int yOffset) {
     final dstPageIndex = _pageIndexFromOperand(destOperand);
     if (srcOperand == -1 || srcOperand == -2) {
       final srcPageIndex = _pageIndexFromOperand(srcOperand);
@@ -101,14 +121,18 @@ class VirtualRenderer {
     _displayLists[_displayList0].addCommand(command);
   }
 
-  void drawString(int index, int x, int y, int colorIndex) {
-    final text = strings_en[index];
-    if (text == null) {
-      print('Failed to load string: $index');
+  void addDrawString(int id, int x, int y, int colorIndex) {
+    final strings = text;
+    if (strings == null) {
+      return;
+    }
+    final stringIndex = stringIds.indexOf(id);
+    if (stringIndex == -1 || stringIndex < 0 || stringIndex >= strings.length) {
+      //print('Failed to find string with id: $id');
       return;
     }
     _addCommand(
-      DrawStringCommand(strings_en[index]!, Vector2(x.toDouble(), y.toDouble()), colorIndex),
+      DrawStringCommand(text![stringIndex], Vector2(x.toDouble(), y.toDouble()), colorIndex),
     );
   }
 
@@ -116,7 +140,7 @@ class VirtualRenderer {
     return (polygonSet == 0) ? polygons1 : polygons2!;
   }
 
-  void drawPolygon(int polygonSet, int polygonOffset, int color, int zoom, int x, int y) {
+  void addDrawPolygon(int polygonSet, int polygonOffset, int color, int zoom, int x, int y) {
     final parser = _polygonParserForSet(polygonSet);
     final polygon = parser.parse(polygonOffset, zoom / 64.0);
     if (polygon != null) {
@@ -124,7 +148,8 @@ class VirtualRenderer {
     }
   }
 
-  void drawBitmap(int resourceIndex) {
-    _addCommand(DrawBitmapCommand(resourceIndex));
+  void addDrawBitmap(int index) {
+    precacheImage(index);
+    _addCommand(DrawBitmapCommand(index));
   }
 }

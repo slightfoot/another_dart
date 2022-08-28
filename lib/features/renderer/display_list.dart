@@ -8,19 +8,26 @@ class DisplayList {
 
   List<DrawCommand> get commands => List.unmodifiable(_commands);
 
+  void addCommand(DrawCommand command) {
+    _commands.add(command);
+  }
+
   void clear(int colorIndex) {
     _commands.clear();
     _commands.add(FillPageCommand(colorIndex));
-  }
-
-  void addCommand(DrawCommand command) {
-    _commands.add(command);
   }
 
   void copy(DisplayList source) {
     _commands.clear();
     _commands.addAll(source.commands);
     palette = source.palette;
+  }
+
+  DisplayList clone() {
+    final cloned = DisplayList();
+    cloned._commands.addAll(_commands);
+    cloned.palette = palette;
+    return cloned;
   }
 }
 
@@ -50,6 +57,8 @@ class DrawBitmapCommand implements DrawCommand {
   const DrawBitmapCommand(this.resourceIndex);
 
   final int resourceIndex;
+
+  bool get isHighRes => (resourceIndex >= 3000);
 }
 
 class DrawPolygonCommand implements DrawCommand {

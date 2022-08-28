@@ -1,9 +1,8 @@
-import 'package:another_dart/features/vm/renderer.dart';
 import 'package:another_dart/features/vm/machine.dart';
 import 'package:another_dart/features/vm/state.dart';
 import 'package:another_dart/features/vm/variables.dart';
 
-const _bitmapList = [18, 19, 67, 68, 69, 70, 71, 72, 73, 83, 144, 145];
+const _bitmapList = [67, 68, 69, 70, 71, 72, 73, 83, 144, 145];
 
 class VirtualInstructions {
   late VirtualMachine _machine;
@@ -59,18 +58,18 @@ class VirtualInstructions {
   /// 0x04: call function | ex. call -> [addr]
   void call() {
     final addr = readU16();
-    state.tasks[state.taskNum].stack.add(pc);
+    state.currentTask.stack.add(pc);
     pc = addr;
   }
 
   /// 0x05: return from function | ex. ret
   void ret() {
-    pc = state.tasks[state.taskNum].stack.removeLast();
+    pc = state.currentTask.stack.removeLast();
   }
 
   /// 0x06: yield task | ex. yield
   void yield() {
-    state.taskPaused = true;
+    state.taskYielded = true;
   }
 
   /// 0x07: jump to another address | ex. jump -> [addr]
@@ -165,14 +164,14 @@ class VirtualInstructions {
   void fillPage() {
     final pageOperand = readS8();
     final color = readU8();
-    renderer.fillPage(pageOperand, color);
+    renderer.addFillPage(pageOperand, color);
   }
 
   /// 0x0F: copy page | ex. copyPage(1 -> 2 Δ varScrollY);
   void copyPage() {
     final srcOperand = readS8();
     final destOperand = readS8();
-    renderer.copyPage(srcOperand, destOperand, state[Var.scrollY]);
+    renderer.addCopyPage(srcOperand, destOperand, state[Var.scrollY]);
   }
 
   /// 0x10: update frame buffer | ex. updateFrameBuffer(1);
@@ -186,17 +185,17 @@ class VirtualInstructions {
 
   /// 0x11: kill task | ex. killTask(12);
   void killTask() {
-    state.taskPaused = true;
+    state.taskYielded = true;
     pc = -1;
   }
 
   /// 0x12: draw string | ex. drawString(id, x, y, color);
   void drawString() {
-    final index = readU16();
+    final id = readU16();
     final x = readU8();
     final y = readU8();
     final color = readU8();
-    renderer.drawString(index, x, y, color);
+    renderer.addDrawString(id, x, y, color);
   }
 
   /// 0x13: Subtract variable from variable | ex. v3 -= v4;
@@ -247,15 +246,14 @@ class VirtualInstructions {
   /// 0x19: Load resource | ex. loadResource(index);
   void loadResource() {
     final index = readU16();
-    if (_bitmapList.contains(index)) {
-      if (index >= 3000) {
-        throw 'load new bitmap resource: $index';
-      } else {
-        print('drawBitmap($index)');
-        renderer.drawBitmap(index);
-      }
-    } else {
-      _machine.loadResource(index);
+    if (index >= 16000) {
+      _machine.loadPart(index - 16001); // zero index
+    } else if (index >= 3000) {
+      // print('drawBitmap($index) -> HighRes');
+      renderer.addDrawBitmap(index);
+    } else if (_bitmapList.contains(index)) {
+      // print('drawBitmap($index) -> Original');
+      renderer.addDrawBitmap(index);
     }
   }
 
@@ -304,7 +302,7 @@ class VirtualInstructions {
         zoom = readU8();
       }
     }
-    renderer.drawPolygon(polygonSet, offset, 0xff, zoom, x, y);
+    renderer.addDrawPolygon(polygonSet, offset, 0xff, zoom, x, y);
   }
 
   /// 0x8x: Draw Poly Background | ex. drawPolyBackground(...)
@@ -317,6 +315,6 @@ class VirtualInstructions {
       y = 199;
       x += h;
     }
-    renderer.drawPolygon(0, offset, 0xff, 64, x, y);
+    renderer.addDrawPolygon(0, offset, 0xff, 64, x, y);
   }
 }

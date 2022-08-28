@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:another_dart/features/polygon/parser.dart';
+import 'package:another_dart/features/viewer/palette_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:another_dart/app/asset.dart';
 import 'package:another_dart/features/renderer/palette.dart';
@@ -93,7 +94,7 @@ class _PolygonViewerState extends State<PolygonViewer> {
                         for (final palette in _palettes!) //
                           DropdownMenuItem(
                             value: palette,
-                            child: PaletteDisplay(
+                            child: PalettePreview(
                               palette: palette,
                             ),
                           ),
@@ -143,58 +144,6 @@ class _PolygonViewerState extends State<PolygonViewer> {
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-@immutable
-class PaletteDisplay extends StatelessWidget {
-  const PaletteDisplay({
-    super.key,
-    required this.palette,
-  });
-
-  final Palette palette;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            for (int i = 0; i < 8; i++) //
-              PaletteColor(color: palette.colors[i]),
-          ],
-        ),
-        Row(
-          children: [
-            for (int i = 8; i < 16; i++) //
-              PaletteColor(color: palette.colors[i]),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-@immutable
-class PaletteColor extends StatelessWidget {
-  const PaletteColor({
-    super.key,
-    required this.color,
-  });
-
-  final int color;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Color(color),
-      ),
-      child: const SizedBox.square(
-        dimension: kMinInteractiveDimension / 2,
       ),
     );
   }

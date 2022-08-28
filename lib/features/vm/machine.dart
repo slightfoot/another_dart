@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:another_dart/features/polygon/parser.dart';
@@ -12,12 +13,14 @@ import 'package:another_dart/features/vm/renderer.dart';
 import 'package:another_dart/features/vm/instructions.dart';
 import 'package:another_dart/features/vm/state.dart';
 
+export 'package:another_dart/features/vm/renderer.dart';
+
 typedef VirtualInstruction = void Function();
 
 class VirtualMachine {
   VirtualMachine(UpdateDisplayFn updateDisplay) {
     renderer = VirtualRenderer(updateDisplay);
-    generateOpcodeLookup();
+    _generateOpcodeLookup();
     ins.machine = this;
     reset();
   }
@@ -28,11 +31,9 @@ class VirtualMachine {
   final sound = SoundManager();
   final ins = VirtualInstructions();
   late final Map<int, VirtualInstruction> opcodes;
-
-  bool _paused = false;
   Ticker? _ticker;
 
-  void generateOpcodeLookup() {
+  void _generateOpcodeLookup() {
     opcodes = <int, VirtualInstruction>{
       0x00: ins.movI,
       0x01: ins.mov,
@@ -76,6 +77,15 @@ class VirtualMachine {
     sound.start();
   }
 
+  set paused(bool value) {
+    if (!value) {
+      state.timestamp = DateTime.now().millisecondsSinceEpoch;
+    }
+    state.paused = value;
+  }
+
+  bool get paused => state.paused;
+
   void stop() {
     sound.stop();
     input.stop();
@@ -87,6 +97,7 @@ class VirtualMachine {
 
   void reset() {
     renderer.reset();
+    sound.reset();
     state.vars.fillRange(0, 256, 0);
     state.vars[0x54] = 0x81;
     state[Var.randomSeed] = Random().nextInt(0xffff);
@@ -98,18 +109,18 @@ class VirtualMachine {
     state.vars[0xdc] = 33;
     // set when entering a part
     state.vars[0xe4] = 0x14;
-    state.nextPart = state.currentPart = 1; // starting part
+    state.nextPart = 0; // starting part
     state.timestamp = DateTime.now().millisecondsSinceEpoch;
   }
 
-  void loadResource(int resourceIndex) {
-    // print('load_resource($resourceIndex)');
-    if (resourceIndex >= 16000) {
-      state.nextPart = resourceIndex - 16000; // zero index
-    }
+  void loadPart(int partIndex) {
+    state.nextPart = partIndex;
   }
 
   Future<void> tick() async {
+    if (state.paused) {
+      return;
+    }
     final current = DateTime.now().millisecondsSinceEpoch;
     state.delay -= current - state.timestamp;
     while (state.delay <= 0) {
@@ -123,13 +134,6 @@ class VirtualMachine {
   }
 
   Future<bool> runTasks() async {
-    if (input.isKeyPressed(InputKey.pause)) {
-      _paused = !_paused;
-    }
-    if (_paused) {
-      state.delay = 20;
-      return true;
-    }
     if (state.nextPart != -1) {
       await restart(state.nextPart);
       state.nextPart = -1;
@@ -158,8 +162,8 @@ class VirtualMachine {
         }
         state.bytecode.offset = offset;
         state.tasks[i].stack.length = 0;
-        state.taskNum = i;
-        state.taskPaused = false;
+        state.taskIndex = i;
+        state.taskYielded = false;
         executeTask(i);
         state.tasks[i].offset = state.bytecode.offset;
       }
@@ -168,8 +172,8 @@ class VirtualMachine {
   }
 
   void executeTask(int taskIndex) {
-    while (!state.taskPaused) {
-      final int addr = state.bytecode.offset;
+    while (!state.taskYielded) {
+      // final int addr = state.bytecode.offset;
       final opcode = state.bytecode.readByte();
       //print('task ${taskIndex.toString().padLeft(2)}: ${addr.toRadixString(16).padLeft(4, '0')}| ${opcode.toRadixString(16).padLeft(2, '0')}');
       if ((opcode & 0x80) != 0) {
@@ -182,62 +186,50 @@ class VirtualMachine {
     }
   }
 
-  Future<void> restart(int part) async {
+  Future<void> restart(int partIndex) async {
     renderer.text ??= (await rootBundle.loadString('assets/EN.txt')).split('\n');
-    if (part == 0) {
-      // protection
-      renderer.palettes = await Palette.load(assetPath(20));
-      state.bytecode = await load(21);
-      renderer.polygons1 = PolygonParser(await load(22));
-      renderer.polygons2 = null;
-    } else if (part == 1) {
+    if (partIndex == 0) {
       // Intro
       renderer.palettes = await Palette.load(assetPath(23));
       state.bytecode = await load(24);
       renderer.polygons1 = PolygonParser(await load(25));
       renderer.polygons2 = null;
-    } else if (part == 2) {
+    } else if (partIndex == 1) {
       // Arrival
       renderer.palettes = await Palette.load(assetPath(26));
       state.bytecode = await load(27);
       renderer.polygons1 = PolygonParser(await load(28));
       renderer.polygons2 = PolygonParser(await load(17));
-    } else if (part == 3) {
+    } else if (partIndex == 2) {
       // Jail
       renderer.palettes = await Palette.load(assetPath(29));
       state.bytecode = await load(30);
       renderer.polygons1 = PolygonParser(await load(31));
       renderer.polygons2 = PolygonParser(await load(17));
-    } else if (part == 4) {
+    } else if (partIndex == 3) {
       //City
       renderer.palettes = await Palette.load(assetPath(32));
       state.bytecode = await load(33);
       renderer.polygons1 = PolygonParser(await load(34));
       renderer.polygons2 = PolygonParser(await load(17));
-    } else if (part == 5) {
+    } else if (partIndex == 4) {
       // Arena
       renderer.palettes = await Palette.load(assetPath(35));
       state.bytecode = await load(36);
       renderer.polygons1 = PolygonParser(await load(37));
       renderer.polygons2 = PolygonParser(await load(17));
-    } else if (part == 6) {
+    } else if (partIndex == 5) {
       // Baths
       renderer.palettes = await Palette.load(assetPath(38));
       state.bytecode = await load(39);
       renderer.polygons1 = PolygonParser(await load(40));
       renderer.polygons2 = PolygonParser(await load(17));
-    } else if (part == 7) {
+    } else if (partIndex == 6) {
       // End
       renderer.palettes = await Palette.load(assetPath(41));
       state.bytecode = await load(42);
       renderer.polygons1 = PolygonParser(await load(43));
       renderer.polygons2 = PolygonParser(await load(17));
-    } else if (part == 8) {
-      // password screen
-      renderer.palettes = await Palette.load(assetPath(125));
-      state.bytecode = await load(126);
-      renderer.polygons1 = PolygonParser(await load(127));
-      renderer.polygons2 = null;
     }
 
     // set when entering a part
@@ -247,7 +239,7 @@ class VirtualMachine {
       state.tasks[i] = VirtualTask();
     }
     state.tasks[0].offset = 0;
-    state.currentPart = part;
+    state.nextPart = state.currentPart = partIndex;
   }
 
   String assetPath(int resourceIndex) {
