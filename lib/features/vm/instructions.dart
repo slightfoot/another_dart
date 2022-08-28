@@ -302,7 +302,7 @@ class VirtualInstructions {
         zoom = readU8();
       }
     }
-    renderer.addDrawPolygon(polygonSet, offset, 0xff, zoom, x, y);
+    renderer.addDrawPolygon(polygonSet, offset, zoom, x, y);
   }
 
   /// 0x8x: Draw Poly Background | ex. drawPolyBackground(...)
@@ -315,6 +315,6 @@ class VirtualInstructions {
       y = 199;
       x += h;
     }
-    renderer.addDrawPolygon(0, offset, 0xff, 64, x, y);
+    renderer.addDrawPolygon(0, offset, 64, x, y);
   }
 }

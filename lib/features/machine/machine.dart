@@ -71,6 +71,7 @@ class _MachineWidgetState extends State<MachineWidget> {
 
   void _onDrawHiResPressed() {
     setState(() => _drawHiResImages = !_drawHiResImages);
+    _machine.renderer.drawHiResImages = _drawHiResImages;
   }
 
   void _onPausePressed() {

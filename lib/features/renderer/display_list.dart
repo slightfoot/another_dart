@@ -1,3 +1,5 @@
+import 'dart:ui' as ui show Picture;
+
 import 'package:another_dart/features/renderer/drawable.dart';
 import 'package:another_dart/features/renderer/palette.dart';
 import 'package:vector_math/vector_math.dart' show Vector2;
@@ -73,11 +75,15 @@ class DrawBitmapCommand implements DrawCommand {
 class DrawPolygonCommand implements DrawCommand {
   const DrawPolygonCommand(
     this.polygon,
-    this.color,
     this.pos,
   );
 
   final Polygon polygon;
-  final int color;
   final Vector2 pos;
+}
+
+class DrawClonedPolygonsCommand implements DrawCommand {
+  const DrawClonedPolygonsCommand(this.picture);
+
+  final ui.Picture picture;
 }

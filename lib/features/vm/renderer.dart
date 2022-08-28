@@ -1,6 +1,7 @@
-import 'package:another_dart/app/string_ids.dart';
+import 'package:another_dart/app/strings.dart';
 import 'package:another_dart/features/polygon/parser.dart';
 import 'package:another_dart/features/renderer/display_list.dart';
+import 'package:another_dart/features/renderer/display_list_intersect.dart';
 import 'package:another_dart/features/renderer/display_paint.dart';
 import 'package:another_dart/features/renderer/palette.dart';
 import 'package:vector_math/vector_math.dart' show Vector2;
@@ -41,6 +42,12 @@ class VirtualRenderer {
     ];
   }
 
+  bool _drawHiResImages = false;
+
+  set drawHiResImages(bool value) {
+    _drawHiResImages = value;
+  }
+
   void reset() {
     _displayLists = List.generate(4, (_) => DisplayList());
     _displayList0 = 0;
@@ -60,12 +67,11 @@ class VirtualRenderer {
         _displayList1 = _pageIndexFromOperand(pageOperand);
       }
     }
+
     final palette = palettes[_paletteIndex];
     for (final list in _displayLists) {
-      list.palette ??= palette;
+      list.palette = palette;
     }
-    _displayLists[_displayList1].palette = palette;
-    _displayLists[3].palette = _displayLists[_displayList2].palette;
 
     updateDisplay();
   }
@@ -135,11 +141,18 @@ class VirtualRenderer {
     return (polygonSet == 0) ? polygons1 : polygons2!;
   }
 
-  void addDrawPolygon(int polygonSet, int polygonOffset, int color, int zoom, int x, int y) {
+  void addDrawPolygon(int polygonSet, int polygonOffset, int zoom, int x, int y) {
     final parser = _polygonParserForSet(polygonSet);
     final polygon = parser.parse(polygonOffset, zoom / 64.0);
     if (polygon != null) {
-      _addCommand(DrawPolygonCommand(polygon, color, Vector2(x.toDouble(), y.toDouble())));
+      final pos = Vector2(x.toDouble(), y.toDouble());
+      final hasClone = polygon.drawables.any((el) => el.color == 0x11);
+      if (hasClone) {
+        _addCommand(DisplayListIntersect.intersect(_displayLists[0], polygon, pos,
+            drawHiResImages: _drawHiResImages));
+      } else {
+        _addCommand(DrawPolygonCommand(polygon, pos));
+      }
     }
   }
 

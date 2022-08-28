@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:another_dart/features/renderer/display_list.dart';
 import 'package:another_dart/features/renderer/drawable.dart';
+import 'package:another_dart/utils/extensions.dart';
 import 'package:another_dart/utils/load_image.dart';
 import 'package:charcode/charcode.dart';
 import 'package:flutter/widgets.dart';
@@ -72,37 +73,46 @@ class _DisplayListPainter extends CustomPainter {
     return (displayList != oldDelegate.displayList || font != oldDelegate.font);
   }
 
-  Color getColor(int colorIndex) {
-    if (colorIndex > 0x10) {
-      // debugPrint('Invalid Color: ${colorIndex.toRadixString(16).padLeft(2, '0')}');
-    }
-    if (displayList.palette == null) {
-      return const Color(0xff000000);
-    }
-    return colorIndex == 0x10 // Semi-transparent.. guess fixed palette entry for now
-        ? Color(displayList.palette!.colors[12]).withOpacity(0.5)
-        : Color(displayList.palette!.colors[colorIndex & 0xf]);
-  }
-
-  Paint getPaintForColor(int colorIndex) {
-    return Paint()
-      ..color = getColor(colorIndex)
-      ..style = PaintingStyle.fill;
-  }
-
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
     canvas.clipRect(Offset.zero & size);
+    canvas.scale(size.width / 320.0, size.height / 200.0);
+    displayList.paint(
+      canvas,
+      size,
+      font: font,
+      showBorder: showBorder,
+      drawHiResImages: drawHiResImages,
+    );
+    canvas.restore();
+  }
+}
+
+extension ExtDisplayListPaint on DisplayList {
+  void paint(
+    Canvas canvas,
+    Size size, {
+    ui.Image? font,
+    bool showBorder = false,
+    bool drawHiResImages = false,
+  }) {
+    canvas.save();
     try {
-      canvas.scale(size.width / 320.0, size.height / 200.0);
-      for (final command in displayList.commands) {
+      for (final command in commands) {
         if (command is FillPageCommand) {
-          canvas.drawRect(Offset.zero & size, getPaintForColor(command.colorIndex));
+          canvas.drawRect(
+            Offset.zero & size,
+            Paint()
+              ..color = lookupColor(command.colorIndex)
+              ..style = PaintingStyle.fill,
+          );
         } else if (command is VerticalOffsetCommand) {
           canvas.translate(0.0, command.yOffset.toDouble());
         } else if (command is DrawStringCommand) {
-          _drawString(canvas, command, getColor(command.colorIndex));
+          if (font != null) {
+            _drawString(canvas, command, font, lookupColor(command.colorIndex));
+          }
         } else if (command is DrawBitmapCommand) {
           if (!drawHiResImages && command.isHighRes) {
             continue;
@@ -114,36 +124,76 @@ class _DisplayListPainter extends CustomPainter {
             canvas.drawImageRect(image, src, dst, Paint());
           }
         } else if (command is DrawPolygonCommand) {
-          final polygon = command.polygon;
-          canvas.save();
-          canvas.translate(command.pos.x, command.pos.y);
-          if (polygon.scale != 1.0) {
-            canvas.scale(polygon.scale, polygon.scale);
-          }
-          for (final drawable in polygon.drawables) {
-            if (drawable.color == 0x11) {
-              // This color is used for a clone parts of the background buffer
-              // in the display buffer.
-              continue;
-            }
-            final paint = getPaintForColor(drawable.color);
-            if (drawable is Shape) {
-              final offsets = drawable.points.map((el) => Offset(el.x, el.y)).toList();
-              final path = Path()..addPolygon(offsets, true);
-              canvas.drawPath(path, paint);
-              if (showBorder) {
-                _debugBorder(canvas, path, getColor(drawable.color));
-              }
-            } else if (drawable is Point) {
-              final offset = Offset(drawable.point.x - 0.5, drawable.point.y - 0.5);
-              canvas.drawRect(offset & const Size(1, 1), paint);
-            }
-          }
-          canvas.restore();
+          command.polygon
+              .paint(canvas, command.pos.x, command.pos.y, lookupColor, showBorder: showBorder);
+        } else if (command is DrawClonedPolygonsCommand) {
+          canvas.drawPicture(command.picture);
         }
       }
     } catch (error, stackTrace) {
       print('$error\n$stackTrace');
+    }
+    canvas.restore();
+  }
+
+  Color lookupColor(int colorIndex) {
+    if (palette == null) {
+      return const Color(0xff000000);
+    }
+    return colorIndex == 0x10 // Semi-transparent.. guess fixed palette entry for now
+        ? Color(palette!.colors[12]).withOpacity(0.5)
+        : Color(palette!.colors[colorIndex & 0xf]);
+  }
+
+  void _drawString(Canvas canvas, DrawStringCommand command, ui.Image font, Color color) {
+    final start = command.pos.x * 8;
+    double x = start, y = command.pos.y;
+    final chars = command.text.codeUnits;
+    final transforms = <RSTransform>[];
+    final rects = <Rect>[];
+    for (final char in chars) {
+      if (char == $lf) {
+        y += 8;
+        x = start;
+      } else {
+        transforms.add(RSTransform(0.5, 0.0, x + 0.5, y + 0.5));
+        rects.add(Rect.fromLTWH((char % 16) * 16, (char ~/ 16) * 16, 16, 16));
+        x += 8;
+      }
+    }
+    final colors = List.generate(transforms.length, (_) => color);
+    canvas.drawAtlas(font, transforms, rects, colors, BlendMode.dstIn, null, Paint());
+  }
+}
+
+typedef ColorLookup = Color Function(int color);
+
+extension ExtPolygonPaint on Polygon {
+  void paint(Canvas canvas, double x, double y, ColorLookup lookupColor,
+      {bool showBorder = false}) {
+    canvas.save();
+    canvas.translate(x, y);
+    if (scale != 1.0) {
+      canvas.scale(scale, scale);
+    }
+    for (final drawable in drawables) {
+      if (drawable.color == 0x11) {
+        // think should never happen
+        continue;
+      }
+      final paint = Paint()
+        ..color = lookupColor(drawable.color)
+        ..style = PaintingStyle.fill;
+      if (drawable is Shape) {
+        final path = drawable.getPath();
+        canvas.drawPath(path, paint);
+        if (showBorder) {
+          _debugBorder(canvas, path, lookupColor(drawable.color));
+        }
+      } else if (drawable is Point) {
+        final offset = Offset(drawable.point.x - 0.5, drawable.point.y - 0.5);
+        canvas.drawRect(offset & const Size(1, 1), paint);
+      }
     }
     canvas.restore();
   }
@@ -156,25 +206,5 @@ class _DisplayListPainter extends CustomPainter {
         ..strokeWidth = 0.2
         ..style = ui.PaintingStyle.stroke,
     );
-  }
-
-  void _drawString(Canvas canvas, DrawStringCommand command, Color color) {
-    final start = command.pos.x * 8;
-    double x = start, y = command.pos.y;
-    final chars = command.text.codeUnits;
-    final transforms = <RSTransform>[];
-    final rects = <Rect>[];
-    for (final char in chars) {
-      if (char == $lf) {
-        y += 8;
-        x = start;
-      } else {
-        transforms.add(RSTransform(0.5, 0.0, x, y));
-        rects.add(Rect.fromLTWH((char % 16) * 16, (char ~/ 16) * 16, 16, 16));
-        x += 8;
-      }
-    }
-    final colors = List.generate(transforms.length, (_) => color);
-    canvas.drawAtlas(font, transforms, rects, colors, BlendMode.dstIn, null, Paint());
   }
 }
