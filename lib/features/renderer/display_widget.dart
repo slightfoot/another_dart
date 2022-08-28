@@ -100,6 +100,11 @@ class _DisplayListPainter extends CustomPainter {
           canvas.scale(polygon.scale, polygon.scale);
         }
         for (final drawable in polygon.drawables) {
+          if (drawable.color == 0x11) {
+            // This color is used for a clone parts of the background buffer
+            // in the display buffer.
+            continue;
+          }
           final paint = getPaintForColor(drawable.color);
           if (drawable is Shape) {
             final offsets = drawable.points.map((el) => Offset(el.x, el.y)).toList();
