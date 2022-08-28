@@ -187,7 +187,6 @@ class VirtualMachine {
   }
 
   Future<void> restart(int partIndex) async {
-    renderer.text ??= (await rootBundle.loadString('assets/EN.txt')).split('\n');
     if (partIndex == 0) {
       // Intro
       renderer.palettes = await Palette.load(assetPath(23));

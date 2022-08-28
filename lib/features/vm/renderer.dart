@@ -12,7 +12,6 @@ class VirtualRenderer {
     reset();
   }
 
-  List<String>? text;
   late List<Palette> palettes;
   late PolygonParser polygons1;
   late PolygonParser? polygons2;
@@ -122,17 +121,14 @@ class VirtualRenderer {
   }
 
   void addDrawString(int id, int x, int y, int colorIndex) {
-    final strings = text;
-    if (strings == null) {
+    final text = langEn[id];
+    if (text == null) {
+      print('Failed to find string with id: $id');
       return;
     }
-    final stringIndex = stringIds.indexOf(id);
-    if (stringIndex == -1 || stringIndex < 0 || stringIndex >= strings.length) {
-      //print('Failed to find string with id: $id');
-      return;
-    }
+    // print('drawString: $id: $text');
     _addCommand(
-      DrawStringCommand(text![stringIndex], Vector2(x.toDouble(), y.toDouble()), colorIndex),
+      DrawStringCommand(text, Vector2(x.toDouble(), y.toDouble()), colorIndex),
     );
   }
 
