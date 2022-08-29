@@ -2,7 +2,9 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ffi';
 
+import 'package:ffi/ffi.dart';
 import 'package:sdl2/sdl2.dart';
+import 'package:flutter/services.dart' show ByteData, rootBundle;
 
 class SoundManager {
   SoundManager();
@@ -17,17 +19,21 @@ class SoundManager {
     if (_initialized) {
       return;
     }
-    if (Mix_Init(MIX_INIT_OGG) < 0) {
-      print('Failed to init mixer: ${Mix_GetError()}');
-      return;
+    try {
+      if (Mix_Init(MIX_INIT_OGG) < 0) {
+        print('Failed to init mixer: ${Mix_GetError()}');
+        return;
+      }
+      if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        print('Failed to open mixer: ${Mix_GetError()}');
+        Mix_Quit();
+        return;
+      }
+      Mix_AllocateChannels(4);
+      _initialized = true;
+    } catch (error, stackTrace) {
+      print('$error\n$stackTrace');
     }
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
-      print('Failed to open mixer: ${Mix_GetError()}');
-      Mix_Quit();
-      return;
-    }
-    Mix_AllocateChannels(4);
-    _initialized = true;
   }
 
   void stop() {
@@ -67,23 +73,31 @@ class SoundManager {
     Mix_VolumeMusic(value ? 0 : MIX_MAX_VOLUME);
   }
 
-  Pointer<Mix_Chunk>? _getSound(int index) {
-    return _sounds.putIfAbsent(index, () {
-      final file = 'assets/data/file${index.toString().padLeft(3, '0')}';
-      String filePath = '${file}b.dat';
-      if (!File(filePath).existsSync()) {
-        filePath = '$file.dat';
-      }
-      final value = Mix_LoadWAV(filePath);
-      if ((value?.address ?? 0) == 0) {
-        print('Cannot load sound ($index): ${Mix_GetError()}');
-        return null;
-      }
-      return value;
-    });
+  Future<Pointer<Mix_Chunk>?> _getSound(int index) async {
+    var sound = _sounds[index];
+    if (sound != null) {
+      return sound;
+    }
+    final file = 'assets/data/file${index.toString().padLeft(3, '0')}';
+    late ByteData data;
+    try {
+      data = await rootBundle.load('${file}b.dat');
+    } catch (e) {
+      data = await rootBundle.load('$file.dat');
+    }
+    final ptr = malloc<Uint8>(data.buffer.lengthInBytes);
+    ptr.asTypedList(data.buffer.lengthInBytes).setAll(0, data.buffer.asUint8List());
+    sound = Mix_LoadWAV_RW(SDL_RWFromConstMem(ptr.cast(), data.buffer.lengthInBytes), 1);
+    if ((sound?.address ?? 0) == 0) {
+      malloc.free(ptr);
+      print('Cannot load sound ($index): ${Mix_GetError()}');
+      return null;
+    }
+    _sounds[index] = sound;
+    return sound;
   }
 
-  void playSound(int index, int freq, int volume, int channel) {
+  Future<void> playSound(int index, int freq, int volume, int channel) async {
     if (!_initialized || _muted) {
       return;
     }
@@ -91,7 +105,7 @@ class SoundManager {
       Mix_HaltChannel(channel);
       return;
     }
-    final sound = _getSound(index);
+    final sound = await _getSound(index);
     if (sound != null) {
       if (Mix_PlayChannel(channel, sound, 0) >= 0) {
         final mixVolume = (MIX_MAX_VOLUME * 0.5 * (math.min(volume, 0x3F) / 0x40)).toInt();
@@ -105,23 +119,50 @@ class SoundManager {
     }
   }
 
-  void playMusic(int index, int delay, int position) {
+  Future<Pointer<Mix_Chunk>?> _getMusic(int index) async {
+    var sound = _sounds[index];
+    if (sound != null) {
+      return sound;
+    }
+    final file = 'assets/data/file${index.toString().padLeft(3, '0')}';
+    late ByteData data;
+    try {
+      data = await rootBundle.load('${file}b.dat');
+    } catch (e) {
+      data = await rootBundle.load('$file.dat');
+    }
+    final ptr = malloc<Uint8>(data.buffer.lengthInBytes);
+    ptr.asTypedList(data.buffer.lengthInBytes).setAll(0, data.buffer.asUint8List());
+    sound = Mix_LoadWAV_RW(SDL_RWFromConstMem(ptr.cast(), data.buffer.lengthInBytes), 1);
+    if ((sound?.address ?? 0) == 0) {
+      malloc.free(ptr);
+      print('Cannot load sound ($index): ${Mix_GetError()}');
+      return null;
+    }
+    _sounds[index] = sound;
+    return sound;
+  }
+
+  Future<void> playMusic(int index, int delay, int position) async {
     if (!_initialized || _muted) {
       return;
     }
     if (index != 0) {
       return;
     }
-    final music = _musics.putIfAbsent(index, () {
-      final value = Mix_LoadMUS('assets/data/intro.ogg');
-      if ((value?.address ?? 0) == 0) {
+    var music = _musics[index];
+    if (music == null) {
+      final data = await rootBundle.load('assets/data/intro.ogg');
+      final ptr = malloc<Uint8>(data.buffer.lengthInBytes);
+      ptr.asTypedList(data.buffer.lengthInBytes).setAll(0, data.buffer.asUint8List());
+      music = Mix_LoadMUS_RW(SDL_RWFromConstMem(ptr.cast(), data.buffer.lengthInBytes), 1);
+      if ((music?.address ?? 0) == 0) {
+        malloc.free(ptr);
         print('Cannot load music ($index): ${Mix_GetError()}');
-        return null;
+        music = null;
+      } else {
+        _musics[index] = music;
       }
-      return value;
-    });
-    if (music == null || music.address == 0) {
-      return;
     }
     if (Mix_PlayMusic(music, 0) >= 0) {
       Mix_VolumeMusic(MIX_MAX_VOLUME);

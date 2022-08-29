@@ -1,16 +1,13 @@
-# polygon_parser
+## Another World in Dart/Flutter
 
-Polygon Parser
+### Building
 
-## Getting Started
+You should be able to run as normal:
+`flutter run`
 
-This project is a starting point for a Flutter application.
+It'll run fine on MacOS but complain it cannot locate the
+SDL library files (used only for audio). You'll need to
+copy the `.dylib` files from the project directory into
+the output project directory.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Example. `cp *.dylib build/macos/Build/Products/Debug/another_dart.app/` 
