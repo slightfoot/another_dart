@@ -87,6 +87,14 @@ class PolygonParser {
     final points = List<Vector2>.generate(count, (_) => position + _readPoint());
     if (size.x == 0 && size.y <= 1 && count == 4) {
       builder.addPoint(Point(color, position));
+    } else if ((size.x == 0 || size.y == 0) && (count == 2 || count == 4)) {
+      final min = Vector2(double.infinity, double.infinity);
+      final max = Vector2(double.negativeInfinity, double.negativeInfinity);
+      for (final point in points) {
+        Vector2.min(min, point, min);
+        Vector2.max(max, point, max);
+      }
+      builder.addLine(Line(color, [min, max]));
     } else {
       builder.addShape(Shape(color, size, points));
     }

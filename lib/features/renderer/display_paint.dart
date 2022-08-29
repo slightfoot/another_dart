@@ -177,6 +177,17 @@ extension ExtPolygonPaint on Polygon {
         if (showBorder) {
           canvas.drawPath(path, _borderPaint(lookupColor(drawable.color)));
         }
+      } else if (drawable is Line) {
+        final pt0 = drawable.points[0];
+        final pt1 = drawable.points[1];
+        canvas.drawLine(
+          Offset(pt0.x, pt0.y),
+          Offset(pt1.x, pt1.y),
+          Paint()
+            ..color = lookupColor(drawable.color)
+            ..strokeWidth = 1.0
+            ..style = PaintingStyle.stroke,
+        );
       } else if (drawable is Point) {
         final rect = drawable.getRect();
         canvas.drawRect(rect, paint);
@@ -190,10 +201,10 @@ extension ExtPolygonPaint on Polygon {
 }
 
 Paint _borderPaint(Color color) {
-  return ui.Paint()
+  return Paint()
     ..color = HSVColor.fromColor(color).withValue(1.0).toColor().withOpacity(0.5)
     ..strokeWidth = 0.2
-    ..style = ui.PaintingStyle.stroke;
+    ..style = PaintingStyle.stroke;
 }
 
 String _imagePath(int index) {

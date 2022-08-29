@@ -41,6 +41,15 @@ class Shape extends Drawable {
   }
 }
 
+class Line extends Drawable {
+  Line(this.color, List<Vector2> points) //
+      : points = List.unmodifiable(points);
+
+  @override
+  final int color;
+  final List<Vector2> points;
+}
+
 class Polygon {
   Polygon(this.dataOffset, this.scale, this.drawables, this.boundingBox);
 
@@ -85,6 +94,14 @@ class PolygonBuilder {
     Vector2.min(point.point - _half, _min, _min);
     Vector2.max(point.point + _half, _max, _max);
     _drawables.add(point);
+  }
+
+  void addLine(Line line) {
+    Vector2.min(line.points[0], _min, _min);
+    Vector2.max(line.points[0], _max, _max);
+    Vector2.min(line.points[1], _min, _min);
+    Vector2.max(line.points[1], _max, _max);
+    _drawables.add(line);
   }
 
   void addShape(Shape shape) {
