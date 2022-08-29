@@ -15,7 +15,7 @@ class VirtualState {
 
   final vars = Int16List(256);
   int currentPart = -1;
-  int nextPart = 0;
+  int nextPart = -1;
 
   int delay = 0;
   int timestamp = 0;

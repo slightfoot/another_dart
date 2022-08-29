@@ -82,7 +82,7 @@ class _MachineWidgetState extends State<MachineWidget> {
 
   void _onPartPressed(int partIndex) {
     _machine.reset();
-    _machine.restart(partIndex);
+    _machine.loadPart(partIndex);
   }
 
   @override

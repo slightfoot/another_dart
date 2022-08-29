@@ -135,7 +135,7 @@ class VirtualMachine {
 
   Future<bool> runTasks() async {
     if (state.nextPart != -1) {
-      await restart(state.nextPart);
+      await _restart(state.nextPart);
       state.nextPart = -1;
     }
     int activeTasks = 0;
@@ -186,7 +186,7 @@ class VirtualMachine {
     }
   }
 
-  Future<void> restart(int partIndex) async {
+  Future<void> _restart(int partIndex) async {
     if (partIndex == 0) {
       // Intro
       renderer.palettes = await Palette.load(assetPath(23));
@@ -238,7 +238,8 @@ class VirtualMachine {
       state.tasks[i] = VirtualTask();
     }
     state.tasks[0].offset = 0;
-    state.nextPart = state.currentPart = partIndex;
+    state.currentPart = partIndex;
+    renderer.currentPart = state.currentPart;
   }
 
   String assetPath(int resourceIndex) {

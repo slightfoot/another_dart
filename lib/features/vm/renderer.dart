@@ -50,6 +50,8 @@ class VirtualRenderer {
     _drawHiResImages = value;
   }
 
+  int currentPart = 0;
+
   void reset() {
     _displayLists = List.generate(4, (_) => DisplayList());
     _displayList0 = 0;
@@ -71,10 +73,7 @@ class VirtualRenderer {
     }
 
     final palette = palettes[_paletteIndex];
-    for (final list in _displayLists) {
-      list.palette = palette;
-    }
-    // _displayLists[_displayList1].palette = palette;
+    _displayLists[_displayList1].palette = palette;
 
     updateDisplay();
   }
@@ -100,8 +99,8 @@ class VirtualRenderer {
 
   void selectPage(int pageOperand) {
     _displayList0 = _pageIndexFromOperand(pageOperand);
-    // final palette = palettes[_paletteIndex];
-    // _displayLists[_displayList1].palette = palette;
+    final palette = palettes[_paletteIndex];
+    _displayLists[_displayList0].palette = palette;
   }
 
   void addFillPage(int pageOperand, int colorIndex) {
