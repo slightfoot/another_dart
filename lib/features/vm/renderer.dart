@@ -122,7 +122,13 @@ class VirtualRenderer {
       if ((srcOperand & 0x80) == 0) {
         yOffset = 0;
       }
-      _displayLists[dstPageIndex].copy(_displayLists[srcPageIndex], yOffset);
+      if (yOffset > -200.0 && yOffset < 200.0) {
+        // FIXME: for some reason jail(2) screen 4 fails to render when this is enabled.
+        if (currentPart == 2) {
+          yOffset = 0;
+        }
+        _displayLists[dstPageIndex].copy(_displayLists[srcPageIndex], yOffset);
+      }
     }
   }
 
