@@ -1,3 +1,4 @@
+import 'package:another_dart/features/polygon/polygon_cache.dart';
 import 'package:another_dart/utils/extensions.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:another_dart/features/polygon/polygon_offset.dart';
@@ -8,9 +9,10 @@ import 'package:vector_math/vector_math.dart';
 export 'package:another_dart/features/renderer/drawable.dart';
 
 class PolygonParser {
-  const PolygonParser(this.data);
+  PolygonParser(this.data);
 
   final DataBuffer data;
+  final _cache = PolygonCache();
 
   static Future<List<Polygon>> loadDemo(String assetData, String assetOffsets) async {
     final data = await rootBundle.load(assetData);
@@ -27,10 +29,18 @@ class PolygonParser {
   }
 
   Polygon? parse(int offset, double scale) {
+    var polygon = _cache.get(offset, scale);
+    if (polygon != null) {
+      return polygon;
+    }
     data.offset = offset;
     final builder = PolygonBuilder(offset, scale);
     _parseNode(builder, 0xff, Vector2.zero());
-    return builder.build();
+    polygon = builder.build();
+    if (polygon != null) {
+      _cache.add(polygon);
+    }
+    return polygon;
   }
 
   void _parseNode(PolygonBuilder builder, int color, Vector2 position) {

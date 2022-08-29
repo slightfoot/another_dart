@@ -1,4 +1,4 @@
-import 'dart:ui' as ui show Picture;
+import 'dart:ui' as ui show Picture, Path;
 
 import 'package:another_dart/features/renderer/drawable.dart';
 import 'package:another_dart/features/renderer/palette.dart';
@@ -83,7 +83,8 @@ class DrawPolygonCommand implements DrawCommand {
 }
 
 class DrawClonedPolygonsCommand implements DrawCommand {
-  const DrawClonedPolygonsCommand(this.picture);
+  const DrawClonedPolygonsCommand(this.picture, this.outline);
 
   final ui.Picture picture;
+  final ui.Path outline;
 }

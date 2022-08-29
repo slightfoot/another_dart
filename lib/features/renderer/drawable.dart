@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:another_dart/utils/extensions.dart';
 import 'package:vector_math/vector_math.dart';
@@ -13,6 +15,12 @@ class Point extends Drawable {
   final int color;
 
   final Vector2 point;
+
+  ui.Rect? _cached;
+
+  ui.Rect getRect() {
+    return _cached ??= (ui.Offset(point.x - 0.5, point.y - 0.5) & const ui.Size(1, 1));
+  }
 }
 
 class Shape extends Drawable {
@@ -24,10 +32,17 @@ class Shape extends Drawable {
 
   final Vector2 size;
   final List<Vector2> points;
+
+  ui.Path? _cached;
+
+  ui.Path getPath() {
+    return _cached ??= ui.Path()
+      ..addPolygon(points.map((el) => ui.Offset(el.x, el.y)).toList(), true);
+  }
 }
 
 class Polygon {
-  const Polygon(this.dataOffset, this.scale, this.drawables, this.boundingBox);
+  Polygon(this.dataOffset, this.scale, this.drawables, this.boundingBox);
 
   final int dataOffset;
   final double scale;
@@ -36,6 +51,23 @@ class Polygon {
 
   String get description {
     return '${dataOffset.toWordString()} :: count:${drawables.length} :: box:${boundingBox.min} - ${boundingBox.max}';
+  }
+
+  ui.Path? _cached;
+
+  ui.Path getPath() {
+    if (_cached == null) {
+      var path = ui.Path();
+      for (final drawable in drawables) {
+        if (drawable is Shape) {
+          path = ui.Path.combine(ui.PathOperation.union, path, drawable.getPath());
+        } else if (drawable is Point) {
+          path.addRect(drawable.getRect());
+        }
+      }
+      _cached = path;
+    }
+    return _cached!;
   }
 }
 

@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:another_dart/features/renderer/display_list.dart';
 import 'package:another_dart/features/renderer/display_paint.dart';
 import 'package:another_dart/features/renderer/drawable.dart';
-import 'package:another_dart/utils/extensions.dart';
 import 'package:vector_math/vector_math.dart';
 
 class DisplayListIntersect {
@@ -19,6 +18,6 @@ class DisplayListIntersect {
       drawHiResImages: drawHiResImages,
     );
     // canvas.drawPath(polygonPath, Paint()..color = const Color(0xffff0000));
-    return DrawClonedPolygonsCommand(recorder.endRecording());
+    return DrawClonedPolygonsCommand(recorder.endRecording(), polygonPath);
   }
 }

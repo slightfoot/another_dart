@@ -27,12 +27,9 @@ class MachineWidget extends StatefulWidget {
 }
 
 class _MachineWidgetState extends State<MachineWidget> {
-  final _displayList0 = ValueNotifier(DisplayList());
-  final _displayList1 = ValueNotifier(DisplayList());
-  final _displayList2 = ValueNotifier(DisplayList());
-  final _displayList3 = ValueNotifier(DisplayList());
   late VirtualMachine _machine;
-
+  var _displayLists = List.generate(4, (_) => DisplayList());
+  var _activeDisplayList = DisplayList();
   var _debugMode = false;
   var _showBorder = false;
   var _drawHiResImages = false;
@@ -52,11 +49,12 @@ class _MachineWidgetState extends State<MachineWidget> {
   void initState() {
     super.initState();
     _machine = VirtualMachine((VirtualRenderer renderer) {
-      final displayLists = renderer.displayLists;
-      _displayList0.value = displayLists[0].clone();
-      _displayList1.value = displayLists[1].clone();
-      _displayList2.value = displayLists[2].clone();
-      _displayList3.value = displayLists[3].clone();
+      if (mounted) {
+        setState(() {
+          _displayLists = renderer.displayLists;
+          _activeDisplayList = renderer.activeDisplayList;
+        });
+      }
     });
     _machine.start();
   }
@@ -111,11 +109,14 @@ class _MachineWidgetState extends State<MachineWidget> {
       child: FontLoader(
         builder: (BuildContext context, ui.Image font) {
           if (!_debugMode) {
-            return DisplayFrame(
-              displayListNotifier: _displayList1,
-              font: font,
-              showBorder: _showBorder,
-              drawHiResImages: _drawHiResImages,
+            return ColoredBox(
+              color: Colors.black,
+              child: DisplayListPaint(
+                displayList: _activeDisplayList,
+                font: font,
+                showBorder: _showBorder,
+                drawHiResImages: _drawHiResImages,
+              ),
             );
           } else {
             return Column(
@@ -173,7 +174,7 @@ class _MachineWidgetState extends State<MachineWidget> {
                     children: [
                       _DebugDisplayFrame(
                         index: 0,
-                        displayListNotifier: _displayList0,
+                        displayLists: _displayLists,
                         font: font,
                         debugMode: _debugMode,
                         showBorder: _showBorder,
@@ -181,7 +182,7 @@ class _MachineWidgetState extends State<MachineWidget> {
                       ),
                       _DebugDisplayFrame(
                         index: 1,
-                        displayListNotifier: _displayList1,
+                        displayLists: _displayLists,
                         font: font,
                         debugMode: _debugMode,
                         showBorder: _showBorder,
@@ -195,7 +196,7 @@ class _MachineWidgetState extends State<MachineWidget> {
                     children: [
                       _DebugDisplayFrame(
                         index: 2,
-                        displayListNotifier: _displayList2,
+                        displayLists: _displayLists,
                         font: font,
                         debugMode: _debugMode,
                         showBorder: _showBorder,
@@ -203,7 +204,7 @@ class _MachineWidgetState extends State<MachineWidget> {
                       ),
                       _DebugDisplayFrame(
                         index: 3,
-                        displayListNotifier: _displayList3,
+                        displayLists: _displayLists,
                         font: font,
                         debugMode: _debugMode,
                         showBorder: _showBorder,
@@ -245,41 +246,10 @@ class DebugOptionButton extends StatelessWidget {
 }
 
 @immutable
-class DisplayFrame extends StatelessWidget {
-  const DisplayFrame({
-    super.key,
-    required this.displayListNotifier,
-    required this.font,
-    this.showBorder = false,
-    this.drawHiResImages = false,
-  });
-
-  final ValueNotifier<DisplayList> displayListNotifier;
-  final ui.Image font;
-  final bool showBorder;
-  final bool drawHiResImages;
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder(
-      valueListenable: displayListNotifier,
-      builder: (BuildContext context, DisplayList value, Widget? child) {
-        return DisplayListPaint(
-          displayList: value,
-          font: font,
-          showBorder: showBorder,
-          drawHiResImages: drawHiResImages,
-        );
-      },
-    );
-  }
-}
-
-@immutable
 class _DebugDisplayFrame extends StatelessWidget {
   const _DebugDisplayFrame({
     required this.index,
-    required this.displayListNotifier,
+    required this.displayLists,
     required this.font,
     required this.debugMode,
     required this.showBorder,
@@ -287,11 +257,13 @@ class _DebugDisplayFrame extends StatelessWidget {
   });
 
   final int index;
-  final ValueNotifier<DisplayList> displayListNotifier;
+  final List<DisplayList> displayLists;
   final ui.Image font;
   final bool debugMode;
   final bool showBorder;
   final bool drawHiResImages;
+
+  final _names = const ['Draw', 'Display', 'Background 1', 'Background 2'];
 
   Color _lookupColor() {
     return [Colors.blue, Colors.green, Colors.red, Colors.purple][index];
@@ -299,47 +271,42 @@ class _DebugDisplayFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final displayList = displayLists[index];
+    final color = _lookupColor();
+    final palette = displayList.palette;
     return Expanded(
-      child: ValueListenableBuilder(
-        valueListenable: displayListNotifier,
-        builder: (BuildContext context, DisplayList value, Widget? child) {
-          final color = _lookupColor();
-          final palette = value.palette;
-          final name = (const ['Draw', 'Display', 'Background 1', 'Background 2 / Effects'])[index];
-          return Material(
-            color: color,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(2.0, 2.0, 2.0, 0.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Buffer $index ($name)'),
-                      if (palette != null) //
-                        PalettePreview(
-                          palette: palette,
-                          height: 24.0,
-                        ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(2.0),
-                    child: DisplayListPaint(
-                      displayList: value,
-                      font: font,
-                      showBorder: showBorder,
-                      drawHiResImages: drawHiResImages,
+      child: Material(
+        color: color,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(2.0, 2.0, 2.0, 0.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Buffer $index (${_names[index]})'),
+                  if (palette != null) //
+                    PalettePreview(
+                      palette: palette,
+                      height: 24.0,
                     ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          );
-        },
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(2.0),
+                child: DisplayListPaint(
+                  displayList: displayList,
+                  font: font,
+                  showBorder: showBorder,
+                  drawHiResImages: drawHiResImages,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

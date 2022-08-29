@@ -33,12 +33,14 @@ class VirtualRenderer {
 
   late int _paletteIndex = 0;
 
+  DisplayList get activeDisplayList => _displayLists[_displayList1].clone();
+
   List<DisplayList> get displayLists {
     return <DisplayList>[
-      _displayLists[_displayList0],
-      _displayLists[_displayList1],
-      _displayLists[_displayList2],
-      _displayLists[3],
+      _displayLists[1].clone(),
+      _displayLists[2].clone(),
+      _displayLists[0].clone(),
+      _displayLists[3].clone(),
     ];
   }
 
@@ -72,6 +74,7 @@ class VirtualRenderer {
     for (final list in _displayLists) {
       list.palette = palette;
     }
+    // _displayLists[_displayList1].palette = palette;
 
     updateDisplay();
   }
@@ -97,6 +100,8 @@ class VirtualRenderer {
 
   void selectPage(int pageOperand) {
     _displayList0 = _pageIndexFromOperand(pageOperand);
+    // final palette = palettes[_paletteIndex];
+    // _displayLists[_displayList1].palette = palette;
   }
 
   void addFillPage(int pageOperand, int colorIndex) {

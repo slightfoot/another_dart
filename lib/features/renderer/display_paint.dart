@@ -1,30 +1,13 @@
+import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:another_dart/features/renderer/display_list.dart';
 import 'package:another_dart/features/renderer/drawable.dart';
-import 'package:another_dart/utils/extensions.dart';
 import 'package:another_dart/utils/load_image.dart';
 import 'package:charcode/charcode.dart';
 import 'package:flutter/widgets.dart';
 
 final _imageCache = <int, ui.Image>{};
-
-Future<void> precacheImage(int index) async {
-  if (!_imageCache.containsKey(index)) {
-    try {
-      String fileName;
-      if (index >= 3000) {
-        fileName = 'highres/e$index.png';
-      } else {
-        fileName = 'original/file${index.toString().padLeft(3, '0')}.png';
-      }
-      final image = await loadImageAsset('assets/images/$fileName');
-      _imageCache[index] = image;
-    } catch (error) {
-      print('Failed to pre-cache bitmap $index: $error');
-    }
-  }
-}
 
 @immutable
 class DisplayListPaint extends StatelessWidget {
@@ -100,19 +83,22 @@ extension ExtDisplayListPaint on DisplayList {
     canvas.save();
     try {
       for (final command in commands) {
-        if (command is FillPageCommand) {
+        if (command is DrawClonedPolygonsCommand) {
+          canvas.drawPicture(command.picture);
+          if (showBorder) {
+            final paint = _borderPaint(const Color(0xffff0000));
+            canvas.drawPath(command.outline, paint);
+          }
+        } else if (command is DrawPolygonCommand) {
+          command.polygon
+              .paint(canvas, command.pos.x, command.pos.y, lookupColor, showBorder: showBorder);
+        } else if (command is FillPageCommand) {
           canvas.drawRect(
             Offset.zero & size,
             Paint()
               ..color = lookupColor(command.colorIndex)
               ..style = PaintingStyle.fill,
           );
-        } else if (command is VerticalOffsetCommand) {
-          canvas.translate(0.0, command.yOffset.toDouble());
-        } else if (command is DrawStringCommand) {
-          if (font != null) {
-            _drawString(canvas, command, font, lookupColor(command.colorIndex));
-          }
         } else if (command is DrawBitmapCommand) {
           if (!drawHiResImages && command.isHighRes) {
             continue;
@@ -123,11 +109,12 @@ extension ExtDisplayListPaint on DisplayList {
             const dst = Rect.fromLTWH(0.0, 0.0, 320.0, 200.0);
             canvas.drawImageRect(image, src, dst, Paint());
           }
-        } else if (command is DrawPolygonCommand) {
-          command.polygon
-              .paint(canvas, command.pos.x, command.pos.y, lookupColor, showBorder: showBorder);
-        } else if (command is DrawClonedPolygonsCommand) {
-          canvas.drawPicture(command.picture);
+        } else if (command is DrawStringCommand) {
+          if (font != null) {
+            _drawString(canvas, command, font, lookupColor(command.colorIndex));
+          }
+        } else if (command is VerticalOffsetCommand) {
+          canvas.translate(0.0, command.yOffset.toDouble());
         }
       }
     } catch (error, stackTrace) {
@@ -188,23 +175,52 @@ extension ExtPolygonPaint on Polygon {
         final path = drawable.getPath();
         canvas.drawPath(path, paint);
         if (showBorder) {
-          _debugBorder(canvas, path, lookupColor(drawable.color));
+          canvas.drawPath(path, _borderPaint(lookupColor(drawable.color)));
         }
       } else if (drawable is Point) {
-        final offset = Offset(drawable.point.x - 0.5, drawable.point.y - 0.5);
-        canvas.drawRect(offset & const Size(1, 1), paint);
+        final rect = drawable.getRect();
+        canvas.drawRect(rect, paint);
+        if (showBorder) {
+          canvas.drawRect(rect, _borderPaint(lookupColor(drawable.color)));
+        }
       }
     }
     canvas.restore();
   }
+}
 
-  void _debugBorder(Canvas canvas, Path path, Color color) {
-    canvas.drawPath(
-      path,
-      ui.Paint()
-        ..color = HSVColor.fromColor(color).withValue(1.0).toColor().withOpacity(0.5)
-        ..strokeWidth = 0.2
-        ..style = ui.PaintingStyle.stroke,
-    );
+Paint _borderPaint(Color color) {
+  return ui.Paint()
+    ..color = HSVColor.fromColor(color).withValue(1.0).toColor().withOpacity(0.5)
+    ..strokeWidth = 0.2
+    ..style = ui.PaintingStyle.stroke;
+}
+
+String _imagePath(int index) {
+  String fileName;
+  if (index >= 3000) {
+    fileName = 'highres/e$index.png';
+  } else {
+    fileName = 'original/file${index.toString().padLeft(3, '0')}.png';
+  }
+  return 'assets/images/$fileName';
+}
+
+Future<void> precacheHiresImages() async {
+  for (int index = 3000; index < 3400; index++) {
+    if (await File(_imagePath(index)).exists()) {
+      precacheImage(index);
+    }
+  }
+}
+
+Future<void> precacheImage(int index) async {
+  if (!_imageCache.containsKey(index)) {
+    try {
+      final image = await loadImageAsset(_imagePath(index));
+      _imageCache[index] = image;
+    } catch (error) {
+      print('Failed to pre-cache bitmap $index: $error');
+    }
   }
 }
