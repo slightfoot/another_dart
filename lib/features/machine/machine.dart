@@ -127,11 +127,12 @@ class _MachineWidgetState extends State<MachineWidget> {
                       Expanded(
                         child: SingleChildScrollView(
                           padding: const EdgeInsets.all(2.0),
+                          scrollDirection: Axis.horizontal,
                           child: Row(
                             children: [
                               for (int i = 0; i < 7; i++) //
                                 Padding(
-                                  padding: const EdgeInsets.only(right: 3.0),
+                                  padding: const EdgeInsets.symmetric(horizontal: 3.0),
                                   child: OutlinedButton(
                                     onPressed: () => _onPartPressed(i),
                                     child: Text(_partNames[i]),
