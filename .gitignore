@@ -49,7 +49,6 @@ app.*.map.json
 android/
 ios/
 web/
-windows/
 
 # Don't commit resources
 resources/
