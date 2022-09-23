@@ -73,7 +73,6 @@ class VirtualMachine {
     ticker = Ticker((_) => tick());
     ticker.start();
     _ticker = ticker;
-    input.start();
     sound.start();
   }
 
@@ -88,7 +87,6 @@ class VirtualMachine {
 
   void stop() {
     sound.stop();
-    input.stop();
     if (_ticker != null) {
       _ticker!.stop();
       _ticker = null;

@@ -41,8 +41,8 @@ class _MachineWidgetState extends State<MachineWidget> {
     LogicalKeySet(LogicalKeyboardKey.keyM): _onMutePressed,
     LogicalKeySet(LogicalKeyboardKey.keyP): _onPausePressed,
     for (int i = 0; i < 8; i++)
-      LogicalKeySet(LogicalKeyboardKey(LogicalKeyboardKey.digit1.keyId + i)): () =>
-          _onPartPressed(i),
+      LogicalKeySet(LogicalKeyboardKey(LogicalKeyboardKey.digit1.keyId + i)):
+          () => _onPartPressed(i),
   };
 
   @override
@@ -97,14 +97,17 @@ class _MachineWidgetState extends State<MachineWidget> {
       autofocus: true,
       descendantsAreFocusable: false,
       onKey: (FocusNode node, RawKeyEvent event) {
-        var result = KeyEventResult.ignored;
+        var handled = false;
         for (final activator in _shortcuts.keys) {
           if (activator.accepts(event, RawKeyboard.instance)) {
             _shortcuts[activator]!.call();
-            result = KeyEventResult.handled;
+            handled = true;
           }
         }
-        return result;
+
+        handled = _machine.input.onKey(event) || handled;
+
+        return handled ? KeyEventResult.handled : KeyEventResult.ignored;
       },
       child: FontLoader(
         builder: (BuildContext context, ui.Image font) {
@@ -132,7 +135,8 @@ class _MachineWidgetState extends State<MachineWidget> {
                             children: [
                               for (int i = 0; i < 7; i++) //
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 3.0),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 3.0),
                                   child: OutlinedButton(
                                     onPressed: () => _onPartPressed(i),
                                     child: Text(_partNames[i]),
@@ -160,7 +164,9 @@ class _MachineWidgetState extends State<MachineWidget> {
                       DebugOptionButton(
                         onPressed: _onMutePressed,
                         selected: _machine.sound.muted,
-                        icon: _machine.sound.muted ? Icons.volume_off : Icons.volume_up,
+                        icon: _machine.sound.muted
+                            ? Icons.volume_off
+                            : Icons.volume_up,
                       ),
                       DebugOptionButton(
                         onPressed: _onPausePressed,
@@ -241,7 +247,8 @@ class DebugOptionButton extends StatelessWidget {
     final theme = Theme.of(context);
     return IconButton(
       onPressed: onPressed,
-      icon: Icon(icon, color: selected ? theme.colorScheme.surfaceTint : Colors.white60),
+      icon: Icon(icon,
+          color: selected ? theme.colorScheme.surfaceTint : Colors.white60),
     );
   }
 }

@@ -1,6 +1,12 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/services.dart'
-    show LogicalKeyboardKey, RawKeyDownEvent, RawKeyEvent, RawKeyUpEvent, RawKeyboard;
+    show
+        LogicalKeyboardKey,
+        RawKeyDownEvent,
+        RawKeyEvent,
+        RawKeyUpEvent,
+        RawKeyboard;
+import 'package:flutter/widgets.dart';
 
 enum InputKey {
   up(LogicalKeyboardKey.arrowUp),
@@ -21,28 +27,27 @@ class InputManager {
 
   bool isKeyPressed(InputKey key) => _keyboard[key] ?? false;
 
-  void start() {
-    RawKeyboard.instance.addListener(_onKey);
-  }
-
-  void _onKey(RawKeyEvent value) {
-    if (value is RawKeyDownEvent) {
-      // print('onKeyDn: ${value.logicalKey}');
-      _setKeyState(value.logicalKey, true);
-    } else if (value is RawKeyUpEvent) {
-      // print('onKeyUp: ${value.logicalKey}');
-      _setKeyState(value.logicalKey, false);
+  bool onKey(RawKeyEvent event) {
+    if (event is RawKeyDownEvent) {
+      // print('onKeyDn: ${event.logicalKey}');
+      return _setKeyState(event.logicalKey, true);
     }
+
+    if (event is RawKeyUpEvent) {
+      // print('onKeyUp: ${event.logicalKey}');
+      return _setKeyState(event.logicalKey, false);
+    }
+
+    return false;
   }
 
-  void _setKeyState(LogicalKeyboardKey key, bool state) {
-    final inputKey = InputKey.values.firstWhereOrNull((el) => el.logicalKey == key);
+  bool _setKeyState(LogicalKeyboardKey key, bool state) {
+    final inputKey =
+        InputKey.values.firstWhereOrNull((el) => el.logicalKey == key);
     if (inputKey != null) {
       _keyboard[inputKey] = state;
+      return true;
     }
-  }
-
-  void stop() {
-    RawKeyboard.instance.removeListener(_onKey);
+    return false;
   }
 }
