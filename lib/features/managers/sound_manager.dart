@@ -9,8 +9,8 @@ import 'package:flutter/services.dart' show ByteData, rootBundle;
 class SoundManager {
   SoundManager();
 
-  final _sounds = <int, Pointer<Mix_Chunk>?>{};
-  final _musics = <int, Pointer<Mix_Music>?>{};
+  final _sounds = <int, Pointer<MixChunk>>{};
+  final _musics = <int, Pointer<MixMusic>>{};
   final _volumes = <int, int>{};
   bool _initialized = false;
   bool _muted = false;
@@ -20,16 +20,16 @@ class SoundManager {
       return;
     }
     try {
-      if (Mix_Init(MIX_INIT_OGG) < 0) {
-        print('Failed to init mixer: ${Mix_GetError()}');
+      if (mixInit(MIX_INIT_OGG) < 0) {
+        print('Failed to init mixer: ${mixGetError()}');
         return;
       }
-      if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
-        print('Failed to open mixer: ${Mix_GetError()}');
-        Mix_Quit();
+      if (mixOpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        print('Failed to open mixer: ${mixGetError()}');
+        mixQuit();
         return;
       }
-      Mix_AllocateChannels(4);
+      mixAllocateChannels(4);
       _initialized = true;
     } catch (error, stackTrace) {
       print('$error\n$stackTrace');
@@ -38,14 +38,14 @@ class SoundManager {
 
   void stop() {
     if (_initialized) {
-      Mix_CloseAudio();
+      mixCloseAudio();
       for (final chunk in _sounds.values) {
-        Mix_FreeChunk(chunk);
+        mixFreeChunk(chunk);
       }
       for (final music in _musics.values) {
-        Mix_FreeMusic(music);
+        mixFreeMusic(music);
       }
-      Mix_Quit();
+      mixQuit();
       _initialized = false;
     }
   }
@@ -55,9 +55,9 @@ class SoundManager {
       return;
     }
     for (int channel = 0; channel < 4; channel++) {
-      Mix_HaltChannel(channel);
+      mixHaltChannel(channel);
     }
-    Mix_HaltMusic();
+    mixHaltMusic();
   }
 
   bool get muted => _muted;
@@ -68,12 +68,12 @@ class SoundManager {
     }
     _muted = value;
     for (int channel = 0; channel < 4; channel++) {
-      Mix_Volume(channel, value ? 0 : (_volumes[channel] ?? MIX_MAX_VOLUME));
+      mixVolume(channel, value ? 0 : (_volumes[channel] ?? MIX_MAX_VOLUME));
     }
-    Mix_VolumeMusic(value ? 0 : MIX_MAX_VOLUME);
+    mixVolumeMusic(value ? 0 : MIX_MAX_VOLUME);
   }
 
-  Future<Pointer<Mix_Chunk>?> _getSound(int index) async {
+  Future<Pointer<MixChunk>?> _getSound(int index) async {
     var sound = _sounds[index];
     if (sound != null) {
       return sound;
@@ -87,10 +87,10 @@ class SoundManager {
     }
     final ptr = malloc<Uint8>(data.buffer.lengthInBytes);
     ptr.asTypedList(data.buffer.lengthInBytes).setAll(0, data.buffer.asUint8List());
-    sound = Mix_LoadWAV_RW(SDL_RWFromConstMem(ptr.cast(), data.buffer.lengthInBytes), 1);
-    if ((sound?.address ?? 0) == 0) {
+    sound = mixLoadWavRw(sdlRwFromConstMem(ptr.cast(), data.buffer.lengthInBytes), 1);
+    if (sound.address == 0) {
       malloc.free(ptr);
-      print('Cannot load sound ($index): ${Mix_GetError()}');
+      print('Cannot load sound ($index): ${mixGetError()}');
       return null;
     }
     _sounds[index] = sound;
@@ -102,24 +102,24 @@ class SoundManager {
       return;
     }
     if (volume == 0) {
-      Mix_HaltChannel(channel);
+      mixHaltChannel(channel);
       return;
     }
     final sound = await _getSound(index);
     if (sound != null) {
-      if (Mix_PlayChannel(channel, sound, 0) >= 0) {
-        final mixVolume = (MIX_MAX_VOLUME * 0.5 * (math.min(volume, 0x3F) / 0x40)).toInt();
-        _volumes[channel] = mixVolume;
+      if (mixPlayChannelTimed(channel, sound, 0, -1) >= 0) {
+        final volumeGained = (MIX_MAX_VOLUME * 0.5 * (math.min(volume, 0x3F) / 0x40)).toInt();
+        _volumes[channel] = volumeGained;
         if (!_muted) {
-          Mix_Volume(channel, mixVolume);
+          mixVolume(channel, volumeGained);
         }
       } else {
-        print('Cannot play sound ($index): ${Mix_GetError()}');
+        print('Cannot play sound ($index): ${mixGetError()}');
       }
     }
   }
 
-  Future<Pointer<Mix_Chunk>?> _getMusic(int index) async {
+  Future<Pointer<MixChunk>?> _getMusic(int index) async {
     var sound = _sounds[index];
     if (sound != null) {
       return sound;
@@ -133,10 +133,10 @@ class SoundManager {
     }
     final ptr = malloc<Uint8>(data.buffer.lengthInBytes);
     ptr.asTypedList(data.buffer.lengthInBytes).setAll(0, data.buffer.asUint8List());
-    sound = Mix_LoadWAV_RW(SDL_RWFromConstMem(ptr.cast(), data.buffer.lengthInBytes), 1);
-    if ((sound?.address ?? 0) == 0) {
+    sound = mixLoadWavRw(sdlRwFromConstMem(ptr.cast(), data.buffer.lengthInBytes), 1);
+    if (sound.address == 0) {
       malloc.free(ptr);
-      print('Cannot load sound ($index): ${Mix_GetError()}');
+      print('Cannot load sound ($index): ${mixGetError()}');
       return null;
     }
     _sounds[index] = sound;
@@ -155,19 +155,21 @@ class SoundManager {
       final data = await rootBundle.load('assets/data/intro.ogg');
       final ptr = malloc<Uint8>(data.buffer.lengthInBytes);
       ptr.asTypedList(data.buffer.lengthInBytes).setAll(0, data.buffer.asUint8List());
-      music = Mix_LoadMUS_RW(SDL_RWFromConstMem(ptr.cast(), data.buffer.lengthInBytes), 1);
-      if ((music?.address ?? 0) == 0) {
+      music = mixLoadMusRw(sdlRwFromConstMem(ptr.cast(), data.buffer.lengthInBytes), 1);
+      if (music.address == 0) {
         malloc.free(ptr);
-        print('Cannot load music ($index): ${Mix_GetError()}');
+        print('Cannot load music ($index): ${mixGetError()}');
         music = null;
       } else {
         _musics[index] = music;
       }
     }
-    if (Mix_PlayMusic(music, 0) >= 0) {
-      Mix_VolumeMusic(MIX_MAX_VOLUME);
-    } else {
-      print('Cannot play music ($index): ${Mix_GetError()}');
+    if (music != null) {
+      if (mixPlayMusic(music, 0) >= 0) {
+        mixVolumeMusic(MIX_MAX_VOLUME);
+      } else {
+        print('Cannot play music ($index): ${mixGetError()}');
+      }
     }
   }
 }

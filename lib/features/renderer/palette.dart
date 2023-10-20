@@ -8,7 +8,8 @@ class Palette {
   final List<int> colors;
 
   static Future<List<Palette>> load(String assetPath) async {
-    final palette = DataBuffer(await rootBundle.load(assetPath));
+    final data = await rootBundle.load(assetPath);
+    final palette = DataBuffer(data);
     final count = palette.length ~/ 32; // 32 bytes per palette
     return List.generate(count, (index) {
       return Palette(

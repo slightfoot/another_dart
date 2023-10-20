@@ -128,7 +128,7 @@ extension ExtDisplayListPaint on DisplayList {
       return const Color(0xff000000);
     }
     return colorIndex == 0x10 // Semi-transparent.. guess fixed palette entry for now
-        ? Color(palette!.colors[11]).withOpacity(0.5)
+        ? Color(palette!.colors[12]).withOpacity(0.5)
         : Color(palette!.colors[colorIndex & 0xf]);
   }
 
@@ -171,6 +171,9 @@ extension ExtPolygonPaint on Polygon {
       final paint = Paint()
         ..color = lookupColor(drawable.color)
         ..style = PaintingStyle.fill;
+      if(drawable.color == 0x10) {
+        paint.blendMode = BlendMode.screen;
+      }
       if (drawable is Shape) {
         final path = drawable.getPath();
         canvas.drawPath(path, paint);
