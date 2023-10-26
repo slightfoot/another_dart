@@ -51,4 +51,4 @@ ios/
 web/
 
 # Don't commit resources
-resources/
+/resources/
